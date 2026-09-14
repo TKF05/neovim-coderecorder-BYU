@@ -10,6 +10,18 @@ function M.status()
 	end
 end
 
+function statusEvent(status)
+	local data = {
+		type = "focusStatus",
+		editor = "neovim",
+		recorderVersion = "2026.9.0",
+		timestamp = os.date("%Y-%m-%d %H:%M:%S"),
+		document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
+		focused = status,
+	}
+	file:write(vim.json.encode(data), "\n")
+end
+
 function M.start_recording()
 	M.recording = true
 	vim.cmd("redrawstatus")
@@ -18,6 +30,20 @@ function M.start_recording()
 	vim.o.statusline = "%f %{v:lua.MyPluginStatus()}"
 
 	file = assert(io.open("recording.jsonl", "w"))
+
+	vim.api.nvim_create_autocmd({ "FocusLost" }, {
+		callback = function()
+			statusEvent(false)
+			vim.notify("Focus Lost! ")
+		end,
+	})
+
+	vim.api.nvim_create_autocmd({ "FocusGained" }, {
+		callback = function()
+			statusEvent(true)
+			vim.notify("Focus Gained")
+		end,
+	})
 
 	------------------------------------------------------------------------------
 	------------------------------------------------------------------------------
@@ -123,16 +149,6 @@ function M.start_recording()
 			}
 
 			file:write(vim.json.encode(data), "\n")
-
-			--file:write(
-			--	"Offset: ",
-			--	offset,
-			--	" newFragment: ",
-			--	table.concat(new_fragment),
-			--	" oldFragment: ",
-			--	old_fragment,
-			--	"\n"
-			--)
 
 			file:flush()
 
