@@ -31,6 +31,10 @@ function M.start_recording()
 
 	file = assert(io.open("recording.jsonl", "w"))
 
+	------------------------------------------------------------------------
+	-- Focus Events Fucntionality
+	------------------------------------------------------------------------
+
 	vim.api.nvim_create_autocmd({ "FocusLost" }, {
 		callback = function()
 			statusEvent(false)
