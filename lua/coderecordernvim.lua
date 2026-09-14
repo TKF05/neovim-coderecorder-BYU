@@ -1,3 +1,4 @@
+local version = require("version")
 local M = {}
 
 M.recording = false
@@ -14,7 +15,7 @@ function statusEvent(status)
 	local data = {
 		type = "focusStatus",
 		editor = "neovim",
-		recorderVersion = "2026.9.0",
+		recorderVersion = version,
 		timestamp = os.date("%Y-%m-%d %H:%M:%S"),
 		document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
 		focused = status,
@@ -22,37 +23,7 @@ function statusEvent(status)
 	file:write(vim.json.encode(data), "\n")
 end
 
-function M.start_recording()
-	M.recording = true
-	vim.cmd("redrawstatus")
-	vim.notify("● RECORDING", vim.log.levels.INFO)
-	--For builtin statusline:: for lualine implementation see the lualine.lua in nvim config
-	vim.o.statusline = "%f %{v:lua.MyPluginStatus()}"
-
-	file = assert(io.open("recording.jsonl", "w"))
-
-	------------------------------------------------------------------------
-	-- Focus Events Fucntionality
-	------------------------------------------------------------------------
-
-	vim.api.nvim_create_autocmd({ "FocusLost" }, {
-		callback = function()
-			statusEvent(false)
-			--vim.notify("Focus Lost! ")
-		end,
-	})
-
-	vim.api.nvim_create_autocmd({ "FocusGained" }, {
-		callback = function()
-			statusEvent(true)
-			--vim.notify("Focus Gained")
-		end,
-	})
-
-	------------------------------------------------------------------------------
-	------------------------------------------------------------------------------
-	------------------------------------------------------------------------------
-
+function editEvent()
 	local bufnr = vim.api.nvim_get_current_buf()
 	local old_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
 
@@ -144,7 +115,7 @@ function M.start_recording()
 			local data = {
 				type = "edit",
 				editor = "neovim",
-				recorderVersion = "2026.9.0",
+				recorderVersion = version,
 				timestamp = os.date("%Y-%m-%d %H:%M:%S"),
 				document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
 				offset = offset,
@@ -159,6 +130,59 @@ function M.start_recording()
 			old_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
 		end,
 	})
+end
+
+function snapShot(file)
+	local bufnr = vim.api.nvim_get_current_buf()
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, true)
+
+	fragments = table.concat(lines, "\n")
+	local data = {
+		type = "edit",
+		editor = "neovim",
+		recorderVersion = version,
+		timestamp = os.date("%Y-%m-%d %H:%M:%S"),
+		document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
+		offset = 0,
+		oldFragment = fragments,
+		newFragment = fragments,
+	}
+	file:write(vim.json.encode(data), "\n")
+
+	file:flush()
+end
+
+function M.start_recording()
+	M.recording = true
+	vim.cmd("redrawstatus")
+	vim.notify("● RECORDING", vim.log.levels.INFO)
+	--For builtin statusline:: for lualine implementation see the lualine.lua in nvim config
+	vim.o.statusline = "%f %{v:lua.MyPluginStatus()}"
+
+	file = assert(io.open("recording.jsonl", "w"))
+
+	snapShot(file)
+
+	------------------------------------------------------------------------
+	-- Focus Events Fucntionality
+	------------------------------------------------------------------------
+
+	vim.api.nvim_create_autocmd({ "FocusLost" }, {
+		callback = function()
+			statusEvent(false)
+		end,
+	})
+
+	vim.api.nvim_create_autocmd({ "FocusGained" }, {
+		callback = function()
+			statusEvent(true)
+		end,
+	})
+
+	------------------------------------------------------------------------------
+	-- Edit Events functionality
+	------------------------------------------------------------------------------
+	editEvent()
 end
 
 function M.stop_recording()
