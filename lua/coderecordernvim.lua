@@ -34,14 +34,14 @@ function M.start_recording()
 	vim.api.nvim_create_autocmd({ "FocusLost" }, {
 		callback = function()
 			statusEvent(false)
-			vim.notify("Focus Lost! ")
+			--vim.notify("Focus Lost! ")
 		end,
 	})
 
 	vim.api.nvim_create_autocmd({ "FocusGained" }, {
 		callback = function()
 			statusEvent(true)
-			vim.notify("Focus Gained")
+			--vim.notify("Focus Gained")
 		end,
 	})
 
