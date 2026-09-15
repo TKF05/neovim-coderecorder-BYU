@@ -2,6 +2,8 @@ local version = require("version")
 local M = {}
 
 M.recording = false
+M.filename = ""
+M.cwd = ""
 
 function M.status()
 	if M.recording then
@@ -17,7 +19,7 @@ function statusEvent(status)
 		editor = "neovim",
 		recorderVersion = version,
 		timestamp = os.date("%Y-%m-%d %H:%M:%S"),
-		document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
+		document = M.cwd,
 		focused = status,
 	}
 	file:write(vim.json.encode(data), "\n")
@@ -57,6 +59,10 @@ function editEvent()
 			------------------------------------------------------------------------
 			local new_end_row_abs = start_row + new_end_row
 			local new_end_col_abs = start_col + new_end_col
+
+			local line_count = vim.api.nvim_buf_line_count(bufnr)
+
+			new_end_row_abs = math.min(new_end_row_abs, line_count - 1)
 
 			local new_fragment =
 				vim.api.nvim_buf_get_text(bufnr, start_row, start_col, new_end_row_abs, new_end_col_abs, {})
@@ -117,7 +123,7 @@ function editEvent()
 				editor = "neovim",
 				recorderVersion = version,
 				timestamp = os.date("%Y-%m-%d %H:%M:%S"),
-				document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
+				document = M.cwd,
 				offset = offset,
 				oldFragment = old_fragment,
 				newFragment = new_fragment,
@@ -142,7 +148,7 @@ function snapShot(file)
 		editor = "neovim",
 		recorderVersion = version,
 		timestamp = os.date("%Y-%m-%d %H:%M:%S"),
-		document = "/home/tkfife/projects/programming/coderecordernvim/testeen/test.py",
+		document = M.cwd,
 		offset = 0,
 		oldFragment = fragments,
 		newFragment = fragments,
@@ -154,12 +160,17 @@ end
 
 function M.start_recording()
 	M.recording = true
+	M.filename = vim.fn.expand("%:t")
+	M.cwd = (vim.fn.getcwd() .. "/" .. M.filename)
+	vim.notify(M.cwd)
+
 	vim.cmd("redrawstatus")
 	vim.notify("● RECORDING", vim.log.levels.INFO)
 	--For builtin statusline:: for lualine implementation see the lualine.lua in nvim config
 	vim.o.statusline = "%f %{v:lua.MyPluginStatus()}"
 
-	file = assert(io.open("recording.jsonl", "w"))
+	outputFileName = (M.filename:gsub("%.[^%.]+$", "") .. ".recording.jsonl")
+	file = assert(io.open(outputFileName, "w"))
 
 	snapShot(file)
 
