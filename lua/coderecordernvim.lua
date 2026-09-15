@@ -1,4 +1,5 @@
 local version = require("version")
+local gzip = require("gzip")
 local M = {}
 
 M.recording = false
@@ -159,10 +160,10 @@ function snapShot(file)
 end
 
 function M.start_recording()
+	--TODO: gzip functionality :: decompress the file and then write to it, then recompress
 	M.recording = true
 	M.filename = vim.fn.expand("%:t")
 	M.cwd = (vim.fn.getcwd() .. "/" .. M.filename)
-	vim.notify(M.cwd)
 
 	vim.cmd("redrawstatus")
 	vim.notify("● RECORDING", vim.log.levels.INFO)
@@ -170,7 +171,7 @@ function M.start_recording()
 	vim.o.statusline = "%f %{v:lua.MyPluginStatus()}"
 
 	outputFileName = (M.filename:gsub("%.[^%.]+$", "") .. ".recording.jsonl")
-	file = assert(io.open(outputFileName, "w"))
+	file = assert(io.open(outputFileName, "a"))
 
 	snapShot(file)
 
