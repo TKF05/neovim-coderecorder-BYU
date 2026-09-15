@@ -16,9 +16,10 @@ return {
 	end,
 }
 
-```lua
+```
 
 For usage with LuaLine:
+
 ```lua
 
 return {
