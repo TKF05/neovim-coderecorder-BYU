@@ -50,6 +50,8 @@ function editEvent()
 			------------------------------------------------------------------------
 			local lines = vim.api.nvim_buf_get_lines(bufnr, 0, start_row, true)
 			local offset = 0
+			line_count = vim.api.nvim_buf_line_count(bufnr)
+
 			for _, line in ipairs(lines) do
 				offset = offset + vim.fn.strchars(line) + 1
 			end
@@ -59,16 +61,23 @@ function editEvent()
 			-- Find the new Fragment
 			------------------------------------------------------------------------
 			local new_end_row_abs = start_row + new_end_row
+			--new_end_row_abs = math.min(new_end_row_abs, line_count - 1)
+
 			local new_end_col_abs = start_col + new_end_col
 
-			local line_count = vim.api.nvim_buf_line_count(bufnr)
+			--new_fragment = vim.api.nvim_buf_get_text(bufnr, start_row, start_col, new_end_row_abs, new_end_col_abs, {})
+			--new_fragment = table.concat(new_fragment, "\n")
 
-			new_end_row_abs = math.min(new_end_row_abs, line_count - 1)
-
-			local new_fragment =
-				vim.api.nvim_buf_get_text(bufnr, start_row, start_col, new_end_row_abs, new_end_col_abs, {})
-
-			new_fragment = table.concat(new_fragment, "\n")
+			local ok, new_fragment = pcall(function()
+				return vim.api.nvim_buf_get_text(bufnr, start_row, start_col, new_end_row_abs, new_end_col_abs, {})
+			end)
+			if ok then
+				new_fragment = table.concat(new_fragment, "\n")
+			end
+			if not ok then
+				snapShot(file)
+				new_fragment = ""
+			end
 
 			------------------------------------------------------------------------
 			-- Calculate absolute old end
@@ -161,9 +170,20 @@ end
 
 function M.start_recording()
 	--TODO: gzip functionality :: decompress the file and then write to it, then recompress
-	M.recording = true
+	--if file extension is .gz, decompress first then write to new file and then compress at end
+
 	M.filename = vim.fn.expand("%:t")
 	M.cwd = (vim.fn.getcwd() .. "/" .. M.filename)
+
+	--Check if file extension is accepted type and dont record if it isnt.
+	local extension = M.filename:match("(%.[^%.]+)$")
+
+	if vim.tbl_contains(_G.extensions, extension) then
+		M.recording = true
+	else
+		M.recording = false
+		return
+	end
 
 	vim.cmd("redrawstatus")
 	vim.notify("● RECORDING", vim.log.levels.INFO)
@@ -172,6 +192,8 @@ function M.start_recording()
 
 	outputFileName = (M.filename:gsub("%.[^%.]+$", "") .. ".recording.jsonl")
 	file = assert(io.open(outputFileName, "a"))
+
+	--file = gzip.read_gz(outputFileName)
 
 	snapShot(file)
 
@@ -206,10 +228,12 @@ end
 
 function M.setup(opts)
 	opts = opts or {}
-	vim.api.nvim_create_user_command("Rn", M.start_recording, {})
-	vim.api.nvim_create_user_command("StartRecording", M.start_recording, {})
-	vim.api.nvim_create_user_command("StopRecording", M.stop_recording, {})
+	vim.api.nvim_create_user_command("CR", M.start_recording, {})
+	vim.api.nvim_create_user_command("CRRecord", M.start_recording, {})
+	vim.api.nvim_create_user_command("CRStop", M.stop_recording, {})
 	_G.MyPluginStatus = M.status
+
+	_G.extensions = { ".py", ".cpp", ".c" }
 end
 
 return M

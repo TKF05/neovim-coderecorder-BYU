@@ -7,6 +7,10 @@ function M.read_gz(path)
 		error("Failed to decompress " .. path .. ": " .. (result.stderr or ""))
 	end
 
+	--	file = assert(io.open("outputfromgzip.jsonl", "a"))
+	--	file:write(table.concat(result))
+	--	return file
+
 	return result.stdout
 end
 
